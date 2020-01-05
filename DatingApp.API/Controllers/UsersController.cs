@@ -63,10 +63,10 @@ namespace DatingApp.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UserForUpdateDto userForUpdateDto)
         {
-            if (id != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value)) // BM start [0] : the same block as in the second
-            {
-                return Unauthorized();
-            }
+                if (id != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value)) // BM start [0] : the same block as in the second
+                {
+                    return Unauthorized();
+                }
 
             var userFromRepo = await r_Repo.GetUser(id); // end [0]
 

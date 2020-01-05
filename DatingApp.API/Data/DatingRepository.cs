@@ -118,5 +118,47 @@ namespace DatingApp.API.Data
         {
             return await r_Context.SaveChangesAsync() > 0;
         }
+
+        public async Task<Message> GetMessage(int id)
+        {
+            return await r_Context.Messages.FirstOrDefaultAsync(m => m.Id == id);
+        }
+
+        public async Task<PagedList<Message>> GetMessagesForUser(MessagesParams messagesParams)
+        {
+            var messages = r_Context.Messages
+            .Include(u => u.Sender).ThenInclude(p => p.Photos)
+            .Include(u => u.Recipient).ThenInclude(p => p.Photos)
+            .AsQueryable();
+
+            switch (messagesParams.MessageContainer)
+            {
+                case "Inbox":
+                    messages = messages.Where(u => u.RecipientId == messagesParams.UserId);
+                    break;
+                case "Outbox":
+                    messages = messages.Where(u => u.SenderId == messagesParams.UserId);
+                    break;
+                default:
+                    messages = messages.Where(u => u.RecipientId == messagesParams.UserId && u.IsRead == false);
+                    break;
+            }
+
+            messages = messages.OrderByDescending(d => d.MessageSent);
+            return await PagedList<Message>.CreateAsync(messages, messagesParams.PageNumber, messagesParams.PageSize);
+        }
+
+        public async Task<IEnumerable<Message>> GetMessageThread(int userId, int recipientId)
+        {
+            var messages = await r_Context.Messages
+            .Include(u => u.Sender).ThenInclude(p => p.Photos)
+            .Include(u => u.Recipient).ThenInclude(p => p.Photos)
+            .Where(m => m.RecipientId == userId && m.SenderId == recipientId
+                    || m.RecipientId == recipientId && m.SenderId == userId)
+                    .OrderByDescending(m => m.MessageSent)
+                    .ToListAsync();
+
+            return messages;
+        }
     }
 }
